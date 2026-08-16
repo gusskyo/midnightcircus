@@ -1,0 +1,4 @@
+window.CIRCUS_CONFIG = {
+  supabaseUrl: "COLE_SUA_PROJECT_URL_AQUI",
+  supabaseKey: "COLE_SUA_PUBLISHABLE_KEY_AQUI"
+};

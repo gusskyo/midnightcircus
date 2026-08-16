@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#120709" />
+  <title>Midnight Circus — Jogos da Tenda</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="noise"></div>
+  <div class="curtain curtain-left"></div>
+  <div class="curtain curtain-right"></div>
+
+  <main id="app" class="app-shell">
+    <section id="screen-home" class="screen active">
+      <div class="hero">
+        <div class="hero-emblem">✦</div>
+        <p class="eyebrow">APRESENTA</p>
+        <h1>MIDNIGHT<br><span>CIRCUS</span></h1>
+        <p class="subtitle">Jogos da Tenda</p>
+        <div class="ornament">✦ ───── ◈ ───── ✦</div>
+        <p class="hero-copy">Entre na tenda. Jogue, assista e conquiste tickets antes que as luzes se apaguem.</p>
+      </div>
+
+      <div class="home-grid">
+        <article class="panel entrance-panel">
+          <div class="panel-title">MESTRE DA CERIMÔNIA</div>
+          <p>Crie uma sessão, escolha quem joga e conduza as atrações.</p>
+          <label>Código da sala</label>
+          <div class="input-row">
+            <input id="host-code" maxlength="6" placeholder="CIRCO" autocomplete="off" />
+            <button id="btn-random-code" class="icon-btn" title="Gerar código">✦</button>
+          </div>
+          <button id="btn-create-room" class="btn btn-gold">CRIAR SESSÃO</button>
+        </article>
+
+        <div class="versus-mark">OU</div>
+
+        <article class="panel entrance-panel">
+          <div class="panel-title">ENTRAR NA TENDA</div>
+          <p>Jogadores e espectadores entram pelo mesmo código.</p>
+          <label>Seu nome</label>
+          <input id="join-name" maxlength="28" placeholder="Nome do jogador" autocomplete="off" />
+          <label>Código da sala</label>
+          <input id="join-code" maxlength="6" placeholder="CIRCO" autocomplete="off" />
+          <button id="btn-join-room" class="btn btn-red">ENTRAR</button>
+        </article>
+      </div>
+
+      <div id="config-warning" class="warning hidden"></div>
+    </section>
+
+    <section id="screen-room" class="screen">
+      <header class="topbar">
+        <div>
+          <span class="brand-mini">MIDNIGHT CIRCUS</span>
+          <span id="room-code-label" class="room-code">SALA • ------</span>
+        </div>
+        <div class="topbar-actions">
+          <span id="viewer-badge" class="badge">ESPECTADOR</span>
+          <button id="btn-leave" class="btn btn-ghost btn-small">SAIR</button>
+        </div>
+      </header>
+
+      <div class="room-layout">
+        <aside class="sidebar left-sidebar">
+          <div class="sidebar-heading">CONVIDADOS</div>
+          <div id="player-list" class="player-list"></div>
+          <div class="ticket-legend"><span>🎟</span> Tickets permanecem registrados durante toda a sessão.</div>
+        </aside>
+
+        <section class="stage-wrap">
+          <div id="idle-stage" class="stage idle-stage">
+            <div class="marquee-lights"></div>
+            <div class="tent-icon">♠</div>
+            <p class="eyebrow">O ESPETÁCULO AGUARDA</p>
+            <h2>A próxima atração<br>começa em breve.</h2>
+            <p id="idle-message">O mestre da cerimônia está escolhendo o próximo jogo.</p>
+            <div class="stage-silhouettes">♣ ◆ ★ ◆ ♣</div>
+          </div>
+
+          <div id="game-stage" class="stage game-stage hidden">
+            <div class="game-stage-header">
+              <div>
+                <span id="game-type-chip" class="chip">JOGO</span>
+                <h2 id="game-title">Atração</h2>
+                <p id="game-subtitle"></p>
+              </div>
+              <div id="game-status-badge" class="status-badge">EM ANDAMENTO</div>
+            </div>
+            <div id="participants-strip" class="participants-strip"></div>
+            <div id="game-board" class="game-board"></div>
+            <div id="game-result" class="game-result hidden"></div>
+          </div>
+        </section>
+
+        <aside class="sidebar right-sidebar">
+          <div id="host-controls" class="host-controls hidden">
+            <div class="sidebar-heading">MESTRE</div>
+            <button id="btn-open-games" class="btn btn-gold btn-wide">ESCOLHER JOGO</button>
+            <button id="btn-end-game" class="btn btn-ghost btn-wide hidden">ENCERRAR ATRAÇÃO</button>
+            <div class="host-divider"></div>
+            <div class="sidebar-subheading">DISTRIBUIR TICKETS</div>
+            <select id="ticket-player-select"></select>
+            <div class="ticket-buttons">
+              <button data-ticket="1" class="btn btn-ticket">+1</button>
+              <button data-ticket="3" class="btn btn-ticket">+3</button>
+              <button data-ticket="5" class="btn btn-ticket">+5</button>
+              <button data-ticket="-1" class="btn btn-ticket btn-ticket-neg">−1</button>
+            </div>
+          </div>
+
+          <div class="sidebar-heading">O QUE ACONTECEU</div>
+          <div id="event-log" class="event-log"></div>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <div id="game-picker-modal" class="modal hidden">
+    <div class="modal-backdrop" data-close-modal></div>
+    <div class="modal-card game-picker-card">
+      <button class="modal-close" data-close-modal>×</button>
+      <p class="eyebrow">ESCOLHA A PRÓXIMA ATRAÇÃO</p>
+      <h2>Jogos da Tenda</h2>
+      <p class="modal-copy">Selecione um jogo e depois escolha quem será chamado ao picadeiro.</p>
+      <div id="game-catalog" class="game-catalog"></div>
+    </div>
+  </div>
+
+  <div id="player-picker-modal" class="modal hidden">
+    <div class="modal-backdrop" data-close-player-modal></div>
+    <div class="modal-card player-picker-card">
+      <button class="modal-close" data-close-player-modal>×</button>
+      <p class="eyebrow">CHAME AO PICADEIRO</p>
+      <h2 id="picker-game-title">Jogo</h2>
+      <p id="picker-game-capacity" class="modal-copy"></p>
+      <div id="player-picker-list" class="player-picker-list"></div>
+      <button id="btn-start-selected-game" class="btn btn-red btn-wide">ABRIR AS CORTINAS</button>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
