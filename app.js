@@ -8,10 +8,10 @@
     cups: {title:'Copos do Arlequim', icon:'♠', min:1,max:1,type:'SORTE', desc:'Uma bolinha, três copos e apenas uma chance.'},
     tightrope: {title:'Corda do Acrobata', icon:'⚖', min:1,max:1,type:'RISCO', desc:'Avance com cuidado ou arrisque passos maiores até o outro lado.'},
     oracle: {title:'Oráculo dos Números', icon:'✦', min:1,max:1,type:'RACIOCÍNIO', desc:'Descubra o número secreto usando apenas as pistas do oráculo.'},
-    darts: {title:'Dardos do Diabo', icon:'✥', min:1,max:1,type:'SORTE + ESCOLHA', desc:'Escolha seu estilo de arremesso e tente somar 12 pontos.'},
-    cards: {title:'Duelo das Cartas', icon:'♦', min:2,max:2,type:'ESTRATÉGIA', desc:'Sol, Lua e Estrela se vencem em um ciclo. Primeiro a 2 pontos.'},
-    bones: {title:'Leilão de Ossos', icon:'☠', min:2,max:2,type:'ESTRATÉGIA', desc:'Aposte seus 10 ossos em três rodadas. Quem dominar mais rodadas vence.'},
-    mirrors: {title:'Espelhos Gêmeos', icon:'◇', min:2,max:2,type:'LÓGICA COOPERATIVA', desc:'Dois jogadores, uma resposta. Resolva padrões sem quebrar o reflexo.'}
+    darts: {title:'Dardos do Diabo', icon:'✥', min:1,max:1,type:'HABILIDADE', desc:'Pare o marcador no centro. A cada dardo, a barra fica mais rápida.'},
+    cards: {title:'Cartas da Cartomante', icon:'♦', min:2,max:2,type:'RACIOCÍNIO COOPERATIVO', desc:'Juntem duas pistas para descobrir qual símbolo o circo esconde.'},
+    bones: {title:'Cofre de Ossos', icon:'☠', min:2,max:2,type:'ESTRATÉGIA COOPERATIVA', desc:'Somem suas ofertas secretas para atingir exatamente o número exigido pelo circo.'},
+    mirrors: {title:'Espelhos Gêmeos', icon:'◇', min:2,max:2,type:'LÓGICA COOPERATIVA', desc:'Dois jogadores contra o espelho. Resolva padrões sem quebrar o reflexo.'}
   };
 
   const $ = id => document.getElementById(id);
@@ -178,14 +178,15 @@
     switch(g.game_key){
       case 'roulette': {
         const result=s.result||'';
+        const spin=Number(s.spin_deg||1800);
         return `<div class="game-card-center roulette-scene">
-          <div class="roulette-wrap"><div id="roulette-wheel" class="roulette-wheel ${result?'roulette-spinning':''}"><div class="roulette-center">✦</div></div><div class="roulette-pointer">▼</div></div>
+          <div class="roulette-wrap"><div id="roulette-wheel" class="roulette-wheel ${result?'roulette-spinning':''}" style="--spin-end:${spin}deg"><div class="roulette-center">✦</div></div><div class="roulette-pointer">▼</div></div>
           <h3>${result?'A roda está decidindo o destino…':'Faça sua aposta.'}</h3>
           <p class="game-instruction">Vermelho e Preto dividem a roda. Dourado aparece apenas uma vez.</p>
           <div class="choice-grid roulette-choices">
-            <button class="choice-btn game-action" data-action="pick" data-value="red" ${!canPlay?'disabled':''}><span class="choice-icon">♥</span>VERMELHO</button>
-            <button class="choice-btn game-action" data-action="pick" data-value="black" ${!canPlay?'disabled':''}><span class="choice-icon">♠</span>PRETO</button>
-            <button class="choice-btn game-action" data-action="pick" data-value="gold" ${!canPlay?'disabled':''}><span class="choice-icon">★</span>DOURADO</button>
+            <button class="choice-btn game-action" data-action="pick" data-value="red" ${!canPlay||result?'disabled':''}><span class="choice-icon">♥</span>VERMELHO</button>
+            <button class="choice-btn game-action" data-action="pick" data-value="black" ${!canPlay||result?'disabled':''}><span class="choice-icon">♠</span>PRETO</button>
+            <button class="choice-btn game-action" data-action="pick" data-value="gold" ${!canPlay||result?'disabled':''}><span class="choice-icon">★</span>DOURADO</button>
           </div>
           ${result?`<div id="roulette-reveal" class="history visual-reveal">A roleta parou em <strong>${esc(result)}</strong>.</div>`:''}${wait}</div>`;
       }
@@ -193,13 +194,13 @@
         const revealed=Number(s.reveal||0), picked=Number(s.picked||0);
         return `<div class="game-card-center cups-scene">
           <div class="arlequin-title">♠ O ARLEQUIM SORRI ♠</div>
-          <h3>${revealed?'A escolha foi feita.':'Não tire os olhos da pérola.'}</h3>
-          <p class="game-instruction">Você verá onde a pérola começa. Então os copos serão embaralhados rapidamente. Acompanhe o movimento.</p>
+          <h3>${revealed?'A escolha foi feita.':'Primeiro, veja onde a pérola está.'}</h3>
+          <p class="game-instruction">O copo do meio será erguido por um instante. Memorize a pérola. Depois acompanhe o copo durante o embaralhamento.</p>
           <div id="cup-table" class="cup-table ${revealed?'cups-finished':''}">
-            <div id="pearl" class="pearl ${revealed?'pearl-revealed':''}" style="${revealed?`left:calc(50% + ${(revealed-2)*155}px);`:''}">●</div>
-            ${[1,2,3].map(i=>`<button class="circus-cup game-action ${picked===i?'cup-picked':''} ${revealed===i?'cup-winner':''}" data-cup="${i}" data-action="pick" data-value="${i}" style="${revealed?`transform:translateX(${(i-2)*155}px) translateY(${revealed===i?-70:-12}px);`:''}" ${(!canPlay||!revealed)?'disabled':''}><span class="cup-top"></span><span class="cup-body">${i}</span></button>`).join('')}
+            <div id="pearl" class="pearl ${revealed?'pearl-revealed':''}">●</div>
+            ${[1,2,3].map(i=>`<button class="circus-cup game-action ${i===2&&!revealed?'cup-initial':''} ${picked===i?'cup-picked':''} ${revealed===i?'cup-winner':''}" data-cup="${i}" data-action="pick" data-value="${i}" ${(!canPlay||!revealed)?'disabled':''}><span class="cup-top"></span><span class="cup-body">${i}</span></button>`).join('')}
           </div>
-          <div id="shuffle-caption" class="result-badge">${revealed?`A pérola estava no COPO ${revealed}`:'MEMORIZE • A PÉROLA COMEÇA NO CENTRO'}</div>
+          <div id="shuffle-caption" class="result-badge">${revealed?`A pérola estava no COPO ${revealed}`:'OLHE: A PÉROLA ESTÁ SOB O COPO 2'}</div>
           ${wait}</div>`;
       }
       case 'tightrope': { const progress=Number(s.progress||0); const fell=String(s.last||'').toLowerCase().includes('caiu'); return `<div class="game-card-center tightrope-scene">
@@ -208,10 +209,48 @@
         <div class="meter"><div class="meter-fill" style="width:${Math.min(100,progress*10)}%"></div></div><div class="result-badge">PROGRESSO ${progress}/10</div>
         <div class="choice-grid"><button class="choice-btn game-action" data-action="step" data-value="safe" ${!canPlay?'disabled':''}>PASSO FIRME<br><small>+1 • risco baixo</small></button><button class="choice-btn game-action" data-action="step" data-value="bold" ${!canPlay?'disabled':''}>PASSO OUSADO<br><small>+2 ou +3 • risco alto</small></button></div>${s.last?`<div class="history">${esc(s.last)}</div>`:''}${wait}</div>`; }
       case 'oracle': return `<div class="game-card-center oracle-scene"><div class="crystal-wrap"><div class="crystal-ball"><span>${s.attempts?Math.max(0,5-s.attempts):'?'}</span></div><div class="crystal-smoke"></div></div><h3>O Oráculo escolheu um número de 1 a 20.</h3><p class="game-instruction">Você possui cinco tentativas. Cada erro faz a névoa sussurrar MAIOR ou MENOR.</p><div class="result-badge">TENTATIVAS ${s.attempts||0}/5</div><div class="oracle-input"><input id="oracle-guess" type="number" min="1" max="20" placeholder="1–20" ${!canPlay?'disabled':''}><button id="oracle-submit" class="btn btn-red" ${!canPlay?'disabled':''}>CONSULTAR</button></div><div class="history oracle-history">${(s.history||[]).map(h=>`<div>${esc(h)}</div>`).join('')||'A névoa ainda não respondeu.'}</div>${wait}</div>`;
-      case 'darts': { const pts=Number(s.last_points??-1); return `<div class="game-card-center darts-scene"><div class="dart-stage"><div class="dartboard"><span class="ring r1"></span><span class="ring r2"></span><span class="ring r3"></span><span class="bull">✦</span></div>${pts>=0?`<div id="flying-dart" class="flying-dart" data-points="${pts}">➤</div>`:''}</div><h3>Três arremessos. Doze pontos para vencer.</h3><p class="game-instruction">Seguro mira o corpo do alvo; Arriscado busca os anéis internos; Maldito tenta o centro e pode desaparecer na escuridão.</p><div class="score-row"><div class="score-box"><strong>${s.score||0}</strong>PONTOS</div><div class="score-box"><strong>${s.throws||0}/3</strong>DARDOS</div></div><div class="choice-grid"><button class="choice-btn game-action" data-action="throw" data-value="safe" ${!canPlay?'disabled':''}>SEGURO</button><button class="choice-btn game-action" data-action="throw" data-value="risk" ${!canPlay?'disabled':''}>ARRISCADO</button><button class="choice-btn game-action" data-action="throw" data-value="cursed" ${!canPlay?'disabled':''}>MALDITO</button></div><div class="history">${(s.history||[]).map(h=>`<div>${esc(h)}</div>`).join('')||'Os dardos aguardam sob a luz vermelha.'}</div>${wait}</div>`; }
-      case 'cards': { const scores=s.scores||{}, choices=s.last_choices||{}; return `<div class="game-card-center cards-scene"><h3>Escolham as cartas em segredo.</h3><p class="game-instruction">SOL vence LUA • LUA vence ESTRELA • ESTRELA vence SOL.</p><div class="duel-table">${g.participants.map((p,i)=>`<div class="duelist"><div class="duel-name">${esc(p.name)}</div><div class="tarot-card ${choices[p.id]?'card-reveal':''}"><div class="card-back">✦</div><div class="card-face">${choices[p.id]==='sun'?'☀':choices[p.id]==='moon'?'☾':choices[p.id]==='star'?'★':'?'}</div></div><strong>${scores[p.id]||0} PONTO${(scores[p.id]||0)===1?'':'S'}</strong></div>${i===0?'<div class="duel-vs">VS</div>':''}`).join('')}</div><div class="cards-row"><button class="choice-btn game-action" data-action="card" data-value="sun" ${!canPlay?'disabled':''}><span class="choice-icon">☀</span>SOL</button><button class="choice-btn game-action" data-action="card" data-value="moon" ${!canPlay?'disabled':''}><span class="choice-icon">☾</span>LUA</button><button class="choice-btn game-action" data-action="card" data-value="star" ${!canPlay?'disabled':''}><span class="choice-icon">★</span>ESTRELA</button></div><div class="small-note">Rodada ${s.round||1} • ${s.pending_count||0}/2 escolhas recebidas</div>${s.last?`<div class="history">${esc(s.last)}</div>`:''}${wait}</div>`; }
-      case 'bones': { const budgets=s.budgets||{}, wins=s.wins||{}, bids=s.last_bids||{}; return `<div class="game-card-center bones-scene"><div class="bone-pile">☠ ☠ ☠ ☠ ☠</div><h3>Leilão de Ossos</h3><p class="game-instruction">Cada jogador começa com dez ossos. Aposte em segredo. O maior punhado domina a rodada e tudo que foi apostado desaparece.</p><div class="score-row">${g.participants.map(p=>`<div class="score-box bone-player"><strong>${wins[p.id]||0} vitória${(wins[p.id]||0)===1?'':'s'}</strong>${esc(p.name)}<span class="bone-budget">${budgets[p.id]??10} ☠</span>${bids[p.id]!==undefined?`<div class="bid-reveal">última mão: ${bids[p.id]}</div>`:''}</div>`).join('')}</div><div class="oracle-input"><input id="bone-bid" type="number" min="0" max="10" placeholder="Quantos ossos?" ${!canPlay?'disabled':''}><button id="bone-submit" class="btn btn-red" ${!canPlay?'disabled':''}>FECHAR A MÃO</button></div><div class="small-note">Rodada ${s.round||1}/3 • ${s.pending_count||0}/2 mãos fechadas</div>${s.last?`<div class="history">${esc(s.last)}</div>`:''}${wait}</div>`; }
-      case 'mirrors': { const cracked=s.last&&String(s.last).includes('rachou'); return `<div class="game-card-center mirrors-scene"><div class="mirror-frame ${cracked?'mirror-cracked':''}"><div class="mirror-glass"><span>${esc(s.puzzle?.question||'…')}</span></div></div><h3>Não quebre o reflexo.</h3><p class="game-instruction">Os dois participantes veem o mesmo padrão e respondem sem conversar pelo site. Para vencer, precisam manter três reflexos perfeitos.</p><div class="choice-grid">${(s.puzzle?.options||[]).map(o=>`<button class="choice-btn game-action" data-action="answer" data-value="${esc(o)}" ${!canPlay?'disabled':''}>${esc(o)}</button>`).join('')}</div><div class="score-row"><div class="score-box"><strong>${s.success||0}/3</strong>REFLEXOS</div><div class="score-box"><strong>${s.round||1}/4</strong>RODADA</div></div>${s.last?`<div class="history">${esc(s.last)}</div>`:''}${wait}</div>`; }
+      case 'darts': {
+        const throws=Number(s.throws||0), score=Number(s.score||0), precision=Number(s.last_precision??-1);
+        return `<div class="game-card-center darts-scene">
+          <div class="dart-stage"><div class="dartboard"><span class="ring r1"></span><span class="ring r2"></span><span class="ring r3"></span><span class="bull">✦</span>${precision>=0?`<span class="dart-hit" style="--miss:${Math.min(44,Math.abs(precision-50)*.88)}px"></span>`:''}</div></div>
+          <h3>Dardo ${Math.min(5,throws+1)} de 5</h3>
+          <p class="game-instruction">O marcador vai de um lado ao outro. Pare o ponteiro o mais perto possível do centro. A cada arremesso ele fica mais rápido. Só o centro perfeito pontua.</p>
+          <div class="skill-check-wrap">
+            <div class="skill-check-bar"><div class="skill-danger left"></div><div class="skill-good"></div><div class="skill-bull"></div><div class="skill-danger right"></div><div id="dart-needle" class="skill-needle"></div></div>
+            <button id="dart-stop" class="btn btn-red" ${!canPlay?'disabled':''}>LANÇAR!</button>
+          </div>
+          <div class="score-row"><div class="score-box"><strong>${score}</strong>CENTROS</div><div class="score-box"><strong>${throws}/5</strong>DARDOS</div></div>
+          <div class="history">${(s.history||[]).map(h=>`<div>${esc(h)}</div>`).join('')||'O primeiro dardo reluz sob o refletor.'}</div>${wait}</div>`;
+      }
+      case 'cards': {
+        const clues=s.clues||{}, choices=s.last_choices||{}, success=Number(s.success||0);
+        const p1=g.participants[0], p2=g.participants[1];
+        const sym=x=>x==='sun'?'☀':x==='moon'?'☾':x==='star'?'★':'?';
+        return `<div class="game-card-center cards-scene"><h3>Cartas da Cartomante</h3>
+          <p class="game-instruction">O circo esconde um único símbolo. Cada jogador recebe uma pista diferente. Juntem as pistas e escolham o MESMO símbolo correto. Vocês jogam juntos contra a Cartomante.</p>
+          <div class="coop-banner">VOCÊS DOIS <span>VS</span> O CIRCO</div>
+          <div class="clue-grid">
+            <div class="clue-card"><strong>PISTA DE ${esc(p1?.name||'JOGADOR 1')}</strong><span>${esc(clues[p1?.id]||'A carta ainda está virada.')}</span></div>
+            <div class="clue-card"><strong>PISTA DE ${esc(p2?.name||'JOGADOR 2')}</strong><span>${esc(clues[p2?.id]||'A carta ainda está virada.')}</span></div>
+          </div>
+          <div class="duel-table coop-table">${g.participants.map(p=>`<div class="duelist"><div class="duel-name">${esc(p.name)}</div><div class="tarot-card ${choices[p.id]?'card-reveal':''}"><div class="card-back">✦</div><div class="card-face">${sym(choices[p.id])}</div></div></div>`).join('')}</div>
+          <div class="cards-row"><button class="choice-btn game-action" data-action="card" data-value="sun" ${!canPlay?'disabled':''}><span class="choice-icon">☀</span>SOL</button><button class="choice-btn game-action" data-action="card" data-value="moon" ${!canPlay?'disabled':''}><span class="choice-icon">☾</span>LUA</button><button class="choice-btn game-action" data-action="card" data-value="star" ${!canPlay?'disabled':''}><span class="choice-icon">★</span>ESTRELA</button></div>
+          <div class="score-row"><div class="score-box"><strong>${success}/3</strong>ACERTOS</div><div class="score-box"><strong>${s.round||1}/4</strong>RODADA</div></div><div class="small-note">${s.pending_count||0}/2 respostas entregues</div>${s.last?`<div class="history">${esc(s.last)}</div>`:''}${wait}</div>`;
+      }
+      case 'bones': {
+        const budgets=s.budgets||{}, bids=s.last_bids||{}, success=Number(s.success||0), target=Number(s.target||0);
+        return `<div class="game-card-center bones-scene"><div class="bone-pile">☠ ☠ ☠ ☠ ☠</div><h3>O Cofre de Ossos</h3>
+          <p class="game-instruction">O Circo exige exatamente <strong>${target} ossos</strong>. Cada um fecha uma quantidade na mão sem ver a escolha do outro. Se a soma for exata, o cofre abre.</p>
+          <div class="coop-banner">VOCÊS DOIS <span>VS</span> O COFRE</div>
+          <div class="score-row">${g.participants.map(p=>`<div class="score-box bone-player"><strong>${budgets[p.id]??10} ☠</strong>${esc(p.name)}${bids[p.id]!==undefined?`<div class="bid-reveal">última oferta: ${bids[p.id]}</div>`:''}</div>`).join('')}</div>
+          <div class="target-number">${target}</div>
+          <div class="oracle-input"><input id="bone-bid" type="number" min="0" max="10" placeholder="Sua oferta" ${!canPlay?'disabled':''}><button id="bone-submit" class="btn btn-red" ${!canPlay?'disabled':''}>FECHAR A MÃO</button></div>
+          <div class="score-row"><div class="score-box"><strong>${success}/2</strong>COFRES ABERTOS</div><div class="score-box"><strong>${s.round||1}/3</strong>RODADA</div></div><div class="small-note">${s.pending_count||0}/2 mãos fechadas</div>${s.last?`<div class="history">${esc(s.last)}</div>`:''}${wait}</div>`;
+      }
+      case 'mirrors': {
+        const cracked=s.last&&String(s.last).includes('rachou');
+        return `<div class="game-card-center mirrors-scene"><div class="mirror-frame ${cracked?'mirror-cracked':''}"><div class="mirror-glass"><span>${esc(s.puzzle?.question||'…')}</span></div></div><h3>Espelhos Gêmeos</h3><p class="game-instruction">Vocês dois enfrentam o próprio Circo. Ambos precisam responder corretamente para manter o reflexo inteiro. Três reflexos perfeitos vencem a atração.</p><div class="coop-banner">VOCÊS DOIS <span>VS</span> O ESPELHO</div><div class="choice-grid">${(s.puzzle?.options||[]).map(o=>`<button class="choice-btn game-action" data-action="answer" data-value="${esc(o)}" ${!canPlay?'disabled':''}>${esc(o)}</button>`).join('')}</div><div class="score-row"><div class="score-box"><strong>${s.success||0}/3</strong>REFLEXOS</div><div class="score-box"><strong>${s.round||1}/4</strong>RODADA</div></div><div class="small-note">${s.pending_count||0}/2 respostas entregues</div>${s.last?`<div class="history">${esc(s.last)}</div>`:''}${wait}</div>`;
+      }
     }
     return '<div class="game-card-center">A atração está sendo preparada.</div>';
   }
@@ -219,62 +258,85 @@
   function runGameVisuals(g,canPlay){
     if(g.game_key==='cups' && g.status==='active') runCupShuffle(g,canPlay);
     if(g.game_key==='roulette' && g.state?.result){
-      const reveal=$('roulette-reveal'); if(reveal){ reveal.classList.add('visual-reveal'); setTimeout(()=>reveal.classList.add('show'),2500); }
+      const reveal=$('roulette-reveal'); if(reveal){ setTimeout(()=>reveal.classList.add('show'),2600); }
     }
-    if(g.game_key==='darts' && g.state?.last_points!==undefined){ const d=$('flying-dart'); if(d) requestAnimationFrame(()=>d.classList.add('dart-fly')); }
+    if(g.game_key==='darts' && g.status==='active') runDartSkill(g,canPlay);
   }
 
   function runCupShuffle(g,canPlay){
-    const table=$('cup-table'); const pearl=$('pearl'); const caption=$('shuffle-caption');
+    const table=$('cup-table'), pearl=$('pearl'), caption=$('shuffle-caption');
     if(!table||!pearl) return;
     const cups=[...table.querySelectorAll('.circus-cup')];
     const bySlot={1:cups[0],2:cups[1],3:cups[2]};
-    const setCup=(el,slot)=>{ el.dataset.slot=slot; el.style.transform=`translateX(${(slot-2)*155}px)`; };
+    const setCup=(el,slot,extra='')=>{ el.dataset.slot=slot; el.style.transform=`translateX(${(slot-2)*155}px) ${extra}`; };
     cups.forEach((c,i)=>setCup(c,i+1));
-    pearl.style.transform='translateX(0)';
+
+    const revealed=Number(g.state?.reveal||0);
+    if(revealed){
+      pearl.classList.remove('pearl-hide');
+      pearl.style.transform=`translateX(${(revealed-2)*155}px)`;
+      cups.forEach((c,i)=>setCup(c,i+1, revealed===i+1?'translateY(-72px)':'translateY(-12px)'));
+      return;
+    }
 
     const sequence=g.state?.shuffle||[];
     const started=Date.parse(g.state?.shuffle_started_at||'')||Date.now();
     const elapsed=Math.max(0,Date.now()-started);
-    const swapAt=i=>950+i*250;
+    const firstSwap=1350, gap=205, readyAt=firstSwap+sequence.length*gap+260;
+    const swapAt=i=>firstSwap+i*gap;
     const applySwap=pair=>{
-      const [a,b]=pair.map(Number); const ca=bySlot[a], cb=bySlot[b];
+      const [a,b]=pair.map(Number), ca=bySlot[a], cb=bySlot[b];
       bySlot[a]=cb; bySlot[b]=ca; setCup(ca,b); setCup(cb,a);
-      table.classList.toggle('shuffle-jolt'); setTimeout(()=>table.classList.toggle('shuffle-jolt'),80);
+      table.classList.add('shuffle-jolt'); setTimeout(()=>table.classList.remove('shuffle-jolt'),70);
     };
-
     sequence.forEach((pair,i)=>{ if(elapsed>=swapAt(i)) applySwap(pair); });
 
-    if(elapsed<650){
-      caption.textContent='MEMORIZE A PÉROLA…';
-      setTimeout(()=>{ if(pearl.isConnected){ pearl.classList.add('pearl-hide'); caption.textContent='NÃO PISQUE.'; } },650-elapsed);
-    } else {
+    if(elapsed<950){
+      setCup(cups[1],2,'translateY(-78px)');
+      pearl.classList.remove('pearl-hide');
+      caption.textContent='OLHE BEM: A PÉROLA ESTÁ SOB O COPO 2';
+    }else if(elapsed<1200){
+      setCup(cups[1],2,'translateY(0)');
+      pearl.classList.remove('pearl-hide');
+      caption.textContent='O COPO VAI DESCER…';
+    }else{
       pearl.classList.add('pearl-hide');
       caption.textContent='NÃO PISQUE.';
     }
 
     sequence.forEach((pair,i)=>{
-      const when=swapAt(i);
-      if(when<=elapsed) return;
-      setTimeout(()=>{
-        if(!table.isConnected) return;
-        applySwap(pair);
-        caption.textContent=i<7?'MAIS RÁPIDO…':'ACOMPANHE!';
-      },when-elapsed);
+      const when=swapAt(i); if(when<=elapsed) return;
+      setTimeout(()=>{ if(!table.isConnected)return; applySwap(pair); pearl.classList.add('pearl-hide'); caption.textContent=i<6?'ACOMPANHE O COPO…':'MAIS RÁPIDO!'; },when-elapsed);
     });
+    const ready=()=>{
+      if(!table.isConnected)return;
+      caption.textContent='AGORA. EM QUAL COPO ESTÁ A PÉROLA?';
+      table.classList.add('cups-ready'); if(canPlay)cups.forEach(c=>c.disabled=false);
+    };
+    if(elapsed>=readyAt) ready(); else setTimeout(ready,readyAt-elapsed);
+  }
 
-    const readyAt=4200;
-    if(elapsed>=readyAt){
-      caption.textContent='AGORA. ESCOLHA UM COPO.';
-      table.classList.add('cups-ready');
-      if(canPlay) cups.forEach(c=>c.disabled=false);
-    } else {
-      setTimeout(()=>{
-        if(!table.isConnected) return;
-        caption.textContent='AGORA. ESCOLHA UM COPO.';
-        table.classList.add('cups-ready');
-        if(canPlay) cups.forEach(c=>c.disabled=false);
-      },readyAt-elapsed);
+  function runDartSkill(g,canPlay){
+    const needle=$('dart-needle'), stop=$('dart-stop');
+    if(!needle||!stop) return;
+    const throws=Number(g.state?.throws||0);
+    const duration=Math.max(520,1250-throws*155);
+    const epoch=Date.now();
+    const tick=()=>{
+      if(!needle.isConnected) return;
+      const t=((Date.now()-epoch)%duration)/duration;
+      const pos=t<.5?t*200:(1-t)*200;
+      needle.style.left=`${pos}%`;
+      needle.dataset.pos=String(pos);
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+    if(canPlay){
+      stop.onclick=()=>{
+        const pos=Math.max(0,Math.min(100,Number(needle.dataset.pos||0)));
+        stop.disabled=true;
+        sendGameAction(g.id,'throw',{value:pos.toFixed(2)});
+      };
     }
   }
 
@@ -282,7 +344,7 @@
     if(!canPlay) return;
     document.querySelectorAll('.game-action').forEach(btn=>btn.onclick=()=>sendGameAction(g.id,btn.dataset.action,{value:btn.dataset.value}));
     if($('oracle-submit')) $('oracle-submit').onclick=()=>{ const v=Number($('oracle-guess').value); if(v>=1&&v<=20) sendGameAction(g.id,'guess',{value:v}); else toast('Escolha um número entre 1 e 20.'); };
-    if($('bone-submit')) $('bone-submit').onclick=()=>{ const v=Number($('bone-bid').value); if(Number.isInteger(v)&&v>=0) sendGameAction(g.id,'bid',{value:v}); else toast('Digite uma aposta válida.'); };
+    if($('bone-submit')) $('bone-submit').onclick=()=>{ const v=Number($('bone-bid').value); if(Number.isInteger(v)&&v>=0) sendGameAction(g.id,'bid',{value:v}); else toast('Digite uma oferta válida.'); };
   }
 
   async function sendGameAction(gameId,action,payload){
