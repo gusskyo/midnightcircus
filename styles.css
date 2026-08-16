@@ -82,3 +82,19 @@
   .circus-cup{transform-origin:center bottom}
   .cup-position-label{font-size:.58rem}
 }
+
+/* V6 — revelação inequívoca da pérola nos Copos do Arlequim */
+.pearl-attention{
+  opacity:1!important;
+  width:26px!important;
+  height:26px!important;
+  margin-left:-13px!important;
+  font-size:22px!important;
+  color:#fff7c2!important;
+  text-shadow:0 0 8px #fff,0 0 18px #f4d66d,0 0 34px #d69a25!important;
+  animation:pearlPulse .55s ease-in-out infinite alternate;
+  z-index:10!important;
+}
+.pearl-showing .circus-cup:not(.cup-initial){filter:brightness(.72)}
+.pearl-showing .cup-initial{filter:drop-shadow(0 0 22px rgba(243,205,111,.38));z-index:9}
+@keyframes pearlPulse{from{scale:.9}to{scale:1.18}}

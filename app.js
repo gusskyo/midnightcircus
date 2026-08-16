@@ -274,80 +274,136 @@
   function runCupShuffle(g,canPlay){
     const table=$('cup-table'), pearl=$('pearl'), caption=$('shuffle-caption');
     if(!table||!pearl) return;
+
     const cups=[...table.querySelectorAll('.circus-cup')];
     const bySlot={1:cups[0],2:cups[1],3:cups[2]};
+    const initial=Number(g.state?.initial_pearl||2);
+    const revealed=Number(g.state?.reveal||0);
     const posName=n=>n===1?'ESQUERDA':n===2?'CENTRO':'DIREITA';
+
     const setCup=(el,slot,extra='')=>{
+      if(!el)return;
       el.dataset.slot=slot;
       el.dataset.value=slot;
       el.style.transform=`translateX(${(slot-2)*175}px) ${extra}`;
     };
+    const setPearlSlot=slot=>{
+      pearl.style.transform=`translateX(${(slot-2)*175}px)`;
+    };
     cups.forEach((c,i)=>setCup(c,i+1));
 
-    const revealed=Number(g.state?.reveal||0), initial=Number(g.state?.initial_pearl||2);
+    // Jogo já terminou: revela a posição final.
     if(revealed){
       pearl.classList.remove('pearl-hide');
-      pearl.style.transform=`translateX(${(revealed-2)*175}px)`;
-      Object.entries(bySlot).forEach(([slot,c])=>setCup(c,Number(slot),Number(slot)===revealed?'translateY(-78px)':'translateY(-8px)'));
+      setPearlSlot(revealed);
+      Object.entries(bySlot).forEach(([slot,c])=>setCup(c,Number(slot),Number(slot)===revealed?'translateY(-82px)':'translateY(-8px)'));
+      caption.textContent=`A PÉROLA ESTAVA À ${posName(revealed)}.`;
       return;
     }
 
     const sequence=g.state?.shuffle||[];
     const startsAt=Date.parse(g.state?.shuffle_starts_at||'')||Date.now();
-    const elapsed=Date.now()-startsAt;
-    const liftUntil=1800, dropUntil=2200;
-    const gaps=[470,430,390,350,310,275,245,220];
-    const swapTimes=[]; let acc=2500;
+    const now=Date.now();
+
+    // Linha do tempo relativa ao instante em que a pérola é mostrada.
+    const REVEAL_MS=2600;       // copo fica levantado com a pérola visível
+    const DROP_MS=700;          // tempo para o copo descer
+    const FIRST_SWAP_MS=REVEAL_MS+DROP_MS+450;
+    const gaps=[560,510,455,400,350,310,275,245];
+    const swapTimes=[];
+    let acc=FIRST_SWAP_MS;
     sequence.forEach((_,i)=>{ swapTimes.push(acc); acc+=gaps[Math.min(i,gaps.length-1)]; });
-    const readyAt=acc+350;
+    const READY_MS=acc+500;
 
     const applySwap=pair=>{
       const [a,b]=pair.map(Number), ca=bySlot[a], cb=bySlot[b];
       if(!ca||!cb)return;
       bySlot[a]=cb; bySlot[b]=ca;
-      ca.classList.add('cup-moving'); cb.classList.add('cup-moving');
-      setCup(ca,b); setCup(cb,a);
-      setTimeout(()=>{ca.classList.remove('cup-moving');cb.classList.remove('cup-moving');},180);
+      ca.classList.add('cup-moving');
+      cb.classList.add('cup-moving');
+      setCup(ca,b);
+      setCup(cb,a);
+      setTimeout(()=>{
+        if(ca.isConnected)ca.classList.remove('cup-moving');
+        if(cb.isConnected)cb.classList.remove('cup-moving');
+      },220);
     };
 
-    if(elapsed>=0) sequence.forEach((pair,i)=>{ if(elapsed>=swapTimes[i]) applySwap(pair); });
-
-    const initialCup=cups[initial-1];
-    if(elapsed<0){
-      pearl.classList.add('pearl-hide');
-      caption.textContent='O ARLEQUIM ESTÁ CHAMANDO TODOS OS OLHARES…';
-    }else if(elapsed<liftUntil){
-      setCup(initialCup,initial,'translateY(-82px)');
+    const showPearl=()=>{
+      if(!table.isConnected)return;
+      cups.forEach((c,i)=>setCup(c,i+1));
+      const initialCup=cups[initial-1];
+      setCup(initialCup,initial,'translateY(-90px)');
+      setPearlSlot(initial);
       pearl.classList.remove('pearl-hide');
-      pearl.style.transform=`translateX(${(initial-2)*175}px)`;
-      caption.textContent=`A PÉROLA ESTÁ À ${posName(initial)} — MEMORIZE.`;
-    }else if(elapsed<dropUntil){
+      pearl.classList.add('pearl-attention');
+      caption.textContent=`● A PÉROLA ESTÁ À ${posName(initial)} ●`;
+      table.classList.add('pearl-showing');
+    };
+
+    const dropCup=()=>{
+      if(!table.isConnected)return;
+      const initialCup=cups[initial-1];
       setCup(initialCup,initial,'translateY(0)');
-      pearl.classList.remove('pearl-hide');
-      pearl.style.transform=`translateX(${(initial-2)*175}px)`;
-      caption.textContent='O COPO DESCE…';
-    }else{
-      pearl.classList.add('pearl-hide');
-      caption.textContent='SIGA O MESMO COPO.';
-    }
+      pearl.classList.remove('pearl-attention');
+      caption.textContent=`MEMORIZE O COPO DA ${posName(initial)}…`;
+    };
 
-    sequence.forEach((pair,i)=>{
-      const when=swapTimes[i]; if(when<=elapsed) return;
-      setTimeout(()=>{
-        if(!table.isConnected)return;
-        applySwap(pair);
-        pearl.classList.add('pearl-hide');
-        caption.textContent=i<3?'UMA TROCA…':i<6?'MAIS RÁPIDO…':'ÚLTIMAS TROCAS!';
-      },Math.max(0,when-elapsed));
-    });
+    const hidePearl=()=>{
+      if(!table.isConnected)return;
+      pearl.classList.add('pearl-hide');
+      table.classList.remove('pearl-showing');
+      caption.textContent='NÃO TIRE OS OLHOS DO COPO.';
+    };
 
     const ready=()=>{
       if(!table.isConnected)return;
-      caption.textContent='ESCOLHA: ESQUERDA, CENTRO OU DIREITA.';
+      caption.textContent='AGORA ESCOLHA: ESQUERDA, CENTRO OU DIREITA.';
       table.classList.add('cups-ready');
       if(canPlay)cups.forEach(c=>c.disabled=false);
     };
-    if(elapsed>=readyAt) ready(); else setTimeout(ready,Math.max(0,readyAt-elapsed));
+
+    const elapsed=now-startsAt;
+
+    // Reconstrói o estado correto para alguém que entrou/recarregou no meio da animação.
+    if(elapsed < 0){
+      pearl.classList.add('pearl-hide');
+      caption.textContent='O ARLEQUIM PREPARA A PÉROLA…';
+    } else if(elapsed < REVEAL_MS){
+      showPearl();
+    } else if(elapsed < REVEAL_MS+DROP_MS){
+      showPearl();
+      dropCup();
+    } else {
+      pearl.classList.add('pearl-hide');
+      sequence.forEach((pair,i)=>{ if(elapsed>=swapTimes[i]) applySwap(pair); });
+      caption.textContent=elapsed>=READY_MS?'AGORA ESCOLHA: ESQUERDA, CENTRO OU DIREITA.':'NÃO TIRE OS OLHOS DO COPO.';
+    }
+
+    // IMPORTANTE: agenda também a revelação. Esse timer era o que faltava na V5.
+    if(elapsed<0){
+      setTimeout(showPearl,Math.max(0,-elapsed));
+    }
+    if(elapsed<REVEAL_MS){
+      setTimeout(dropCup,Math.max(0,REVEAL_MS-elapsed));
+    }
+    if(elapsed<REVEAL_MS+DROP_MS){
+      setTimeout(hidePearl,Math.max(0,REVEAL_MS+DROP_MS-elapsed));
+    }
+
+    sequence.forEach((pair,i)=>{
+      const when=swapTimes[i];
+      if(when<=elapsed)return;
+      setTimeout(()=>{
+        if(!table.isConnected)return;
+        hidePearl();
+        applySwap(pair);
+        caption.textContent=i<2?'SIGA O COPO…':i<5?'O ARLEQUIM ACELERA…':'ÚLTIMAS TROCAS!';
+      },Math.max(0,when-elapsed));
+    });
+
+    if(elapsed>=READY_MS) ready();
+    else setTimeout(ready,Math.max(0,READY_MS-elapsed));
   }
 
   function runDartSkill(g,canPlay){
