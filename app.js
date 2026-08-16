@@ -191,16 +191,16 @@
           ${result?`<div id="roulette-reveal" class="history visual-reveal">A roleta parou em <strong>${esc(result)}</strong>.</div>`:''}${wait}</div>`;
       }
       case 'cups': {
-        const revealed=Number(s.reveal||0), picked=Number(s.picked||0);
+        const revealed=Number(s.reveal||0), picked=Number(s.picked||0), initial=Number(s.initial_pearl||2);
         return `<div class="game-card-center cups-scene">
           <div class="arlequin-title">♠ O ARLEQUIM SORRI ♠</div>
           <h3>${revealed?'A escolha foi feita.':'Primeiro, veja onde a pérola está.'}</h3>
-          <p class="game-instruction">O copo do meio será erguido por um instante. Memorize a pérola. Depois acompanhe o copo durante o embaralhamento.</p>
+          <p class="game-instruction">Um dos copos será erguido por um instante. Memorize a pérola. Depois acompanhe o mesmo copo durante o embaralhamento frenético.</p>
           <div id="cup-table" class="cup-table ${revealed?'cups-finished':''}">
             <div id="pearl" class="pearl ${revealed?'pearl-revealed':''}">●</div>
-            ${[1,2,3].map(i=>`<button class="circus-cup game-action ${i===2&&!revealed?'cup-initial':''} ${picked===i?'cup-picked':''} ${revealed===i?'cup-winner':''}" data-cup="${i}" data-action="pick" data-value="${i}" ${(!canPlay||!revealed)?'disabled':''}><span class="cup-top"></span><span class="cup-body">${i}</span></button>`).join('')}
+            ${[1,2,3].map(i=>`<button class="circus-cup game-action ${i===initial&&!revealed?'cup-initial':''} ${picked===i?'cup-picked':''} ${revealed===i?'cup-winner':''}" data-cup="${i}" data-action="pick" data-value="${i}" ${(!canPlay||!revealed)?'disabled':''}><span class="cup-top"></span><span class="cup-body">${i}</span></button>`).join('')}
           </div>
-          <div id="shuffle-caption" class="result-badge">${revealed?`A pérola estava no COPO ${revealed}`:'OLHE: A PÉROLA ESTÁ SOB O COPO 2'}</div>
+          <div id="shuffle-caption" class="result-badge">${revealed?`A pérola estava no COPO ${revealed}`:`OLHE: A PÉROLA ESTÁ SOB O COPO ${initial}`}</div>
           ${wait}</div>`;
       }
       case 'tightrope': { const progress=Number(s.progress||0); const fell=String(s.last||'').toLowerCase().includes('caiu'); return `<div class="game-card-center tightrope-scene">
@@ -272,6 +272,7 @@
     cups.forEach((c,i)=>setCup(c,i+1));
 
     const revealed=Number(g.state?.reveal||0);
+    const initial=Number(g.state?.initial_pearl||2);
     if(revealed){
       pearl.classList.remove('pearl-hide');
       pearl.style.transform=`translateX(${(revealed-2)*155}px)`;
@@ -280,24 +281,35 @@
     }
 
     const sequence=g.state?.shuffle||[];
-    const started=Date.parse(g.state?.shuffle_started_at||'')||Date.now();
-    const elapsed=Math.max(0,Date.now()-started);
-    const firstSwap=1350, gap=205, readyAt=firstSwap+sequence.length*gap+260;
+    const startsAt=Date.parse(g.state?.shuffle_starts_at||g.state?.shuffle_started_at||'')||Date.now();
+    const now=Date.now();
+    const elapsed=now-startsAt;
+    const revealLift=1400, revealDrop=1750, firstSwap=2200, gap=205, readyAt=firstSwap+sequence.length*gap+260;
     const swapAt=i=>firstSwap+i*gap;
     const applySwap=pair=>{
       const [a,b]=pair.map(Number), ca=bySlot[a], cb=bySlot[b];
       bySlot[a]=cb; bySlot[b]=ca; setCup(ca,b); setCup(cb,a);
       table.classList.add('shuffle-jolt'); setTimeout(()=>table.classList.remove('shuffle-jolt'),70);
     };
-    sequence.forEach((pair,i)=>{ if(elapsed>=swapAt(i)) applySwap(pair); });
 
-    if(elapsed<950){
-      setCup(cups[1],2,'translateY(-78px)');
+    if(elapsed>=0){
+      sequence.forEach((pair,i)=>{ if(elapsed>=swapAt(i)) applySwap(pair); });
+    }
+
+    if(elapsed<0){
+      setCup(cups[initial-1],initial,'translateY(-78px)');
       pearl.classList.remove('pearl-hide');
-      caption.textContent='OLHE BEM: A PÉROLA ESTÁ SOB O COPO 2';
-    }else if(elapsed<1200){
-      setCup(cups[1],2,'translateY(0)');
+      pearl.style.transform=`translateX(${(initial-2)*155}px)`;
+      caption.textContent='O ARLEQUIM ESTÁ SE PREPARANDO…';
+    }else if(elapsed<revealLift){
+      setCup(cups[initial-1],initial,'translateY(-78px)');
       pearl.classList.remove('pearl-hide');
+      pearl.style.transform=`translateX(${(initial-2)*155}px)`;
+      caption.textContent=`OLHE BEM: A PÉROLA ESTÁ SOB O COPO ${initial}`;
+    }else if(elapsed<revealDrop){
+      setCup(cups[initial-1],initial,'translateY(0)');
+      pearl.classList.remove('pearl-hide');
+      pearl.style.transform=`translateX(${(initial-2)*155}px)`;
       caption.textContent='O COPO VAI DESCER…';
     }else{
       pearl.classList.add('pearl-hide');
@@ -306,14 +318,14 @@
 
     sequence.forEach((pair,i)=>{
       const when=swapAt(i); if(when<=elapsed) return;
-      setTimeout(()=>{ if(!table.isConnected)return; applySwap(pair); pearl.classList.add('pearl-hide'); caption.textContent=i<6?'ACOMPANHE O COPO…':'MAIS RÁPIDO!'; },when-elapsed);
+      setTimeout(()=>{ if(!table.isConnected)return; applySwap(pair); pearl.classList.add('pearl-hide'); caption.textContent=i<6?'ACOMPANHE O COPO…':'MAIS RÁPIDO!'; },Math.max(0,when-elapsed));
     });
     const ready=()=>{
       if(!table.isConnected)return;
       caption.textContent='AGORA. EM QUAL COPO ESTÁ A PÉROLA?';
       table.classList.add('cups-ready'); if(canPlay)cups.forEach(c=>c.disabled=false);
     };
-    if(elapsed>=readyAt) ready(); else setTimeout(ready,readyAt-elapsed);
+    if(elapsed>=readyAt) ready(); else setTimeout(ready,Math.max(0,readyAt-elapsed));
   }
 
   function runDartSkill(g,canPlay){
